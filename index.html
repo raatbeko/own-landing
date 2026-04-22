@@ -18,6 +18,7 @@ canvas { display:block; }
 #dots { display:flex; gap:10px; align-items:center; }
 .dot { width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,0.15); border:1.5px solid rgba(255,255,255,0.25); transition:all 0.3s; }
 .dot.on { background:#7dff7d; border-color:#7dff7d; box-shadow:0 0 8px #7dff7d; transform:scale(1.35); }
+.dot.done { background:rgba(212,168,85,0.65); border-color:rgba(212,168,85,0.9); box-shadow:0 0 6px rgba(212,168,85,0.45); }
 
 /* ── WELCOME BOARD (above arch) ── */
 #welcome-board {
@@ -64,6 +65,15 @@ canvas { display:block; }
 .pcta:active { transform:scale(0.97); }
 .pclose { position:absolute; top:10px; right:12px; background:none; border:none; color:rgba(255,255,255,0.3); font-size:18px; cursor:pointer; line-height:1; transition:color 0.2s; }
 .pclose:hover { color:rgba(255,255,255,0.8); }
+.pstory { color:rgba(200,255,200,0.42); font-size:11px; font-style:italic; letter-spacing:0.4px; line-height:1.55; margin:-8px 0 14px; }
+
+/* ── ENDING OVERLAY ── */
+#ending { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:40; opacity:0; pointer-events:none; transition:opacity 1.3s ease; text-align:center; }
+#ending.show { opacity:1; }
+.end-box { background:rgba(4,12,4,0.93); border:1.5px solid rgba(212,168,85,0.52); border-radius:20px; padding:30px 40px 26px; backdrop-filter:blur(20px); position:relative; }
+.end-tag { color:rgba(212,168,85,0.65); font-size:9px; letter-spacing:3.5px; text-transform:uppercase; margin-bottom:14px; }
+.end-title { color:#f0e0a0; font-size:18px; font-weight:bold; letter-spacing:0.3px; line-height:1.65; margin-bottom:12px; }
+.end-sub { color:rgba(180,255,180,0.45); font-size:10px; letter-spacing:2px; text-transform:uppercase; }
 </style>
 </head>
 <body>
@@ -71,11 +81,11 @@ canvas { display:block; }
 <!-- Welcome board above arch -->
 <div id="welcome-board" style="opacity:0">
   <div class="wb">
-    <div class="wb-wave">👋</div>
-    <div class="wb-title">Привет, путник!</div>
+    <div class="wb-wave">🧭</div>
+    <div class="wb-title">Меня зовут Раатбек.</div>
     <div class="wb-desc">
-      Это дорога к соц сетям Раатбека<br>
-      Жми кнопки и иди вперёд 🚶
+      Впереди три знака — три стороны.<br>
+      Дойди до конца и узнаешь меня.
     </div>
     <div class="wb-keys">
       <span class="wb-k">←</span>
@@ -92,10 +102,20 @@ canvas { display:block; }
     <div class="pico" id="pop-icon"></div>
     <div class="pname" id="pop-name"></div>
     <div class="phandle" id="pop-handle"></div>
+    <div class="pstory" id="pop-story"></div>
     <a class="pcta" id="pop-cta" href="#" target="_blank">
       Открыть
       <svg viewBox="0 0 16 16" fill="none" style="width:13px;height:13px"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
+  </div>
+</div>
+
+<!-- Ending overlay -->
+<div id="ending">
+  <div class="end-box">
+    <div class="end-tag">квест завершён</div>
+    <div class="end-title">Три знака найдены.<br>Три стороны Раатбека.</div>
+    <div class="end-sub">теперь ты знаешь меня 👋</div>
   </div>
 </div>
 
@@ -113,13 +133,16 @@ canvas { display:block; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const STOPS = [
-  { label:'Старт', color:0x4a9a4a, url:null, handle:null, accent:'#7dff7d',
+  { label:'Старт', color:0x4a9a4a, url:null, handle:null, accent:'#7dff7d', tagline:null,
     svg:`<svg viewBox="0 0 38 38"><circle cx="19" cy="19" r="17" fill="#4a9a4a"/><path d="M19 10v18M10 19h18" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>` },
   { label:'Telegram', color:0x2297d6, url:'https://t.me/+xBs3D6Nw8IQ2ZWNi', handle:'Raatbek', accent:'#29b6f6',
+    tagline:'«Здесь я болтаю обо всём — без фильтров»',
     svg:`<svg viewBox="0 0 38 38"><circle cx="19" cy="19" r="17" fill="#229ED9"/><path d="M27 12L8 19c-1.2.5-1.1 1.1-.1 1.4l4.8 1.5 11.1-7c.5-.3.9.05.5.4L15 21.5l-.4 4.8c.5 0 .8-.2 1-.5l2.4-2.3 4.8 3.5c.9.5 1.5.2 1.7-.8l3-14.2c.3-1.2-.4-1.7-1-1.5z" fill="#fff"/></svg>` },
   { label:'LinkedIn', color:0x0a66c2, url:'https://www.linkedin.com/in/raatbek-zhumabekov-055a55221/', handle:'Raatbek Zhumabekov', accent:'#4fc3f7',
+    tagline:'«Здесь я делаю умное лицо»',
     svg:`<svg viewBox="0 0 38 38"><rect x="2" y="2" width="34" height="34" rx="8" fill="#0A66C2"/><rect x="9" y="15" width="5" height="15" rx="2" fill="#fff"/><circle cx="11.5" cy="11" r="2.5" fill="#fff"/><path d="M18 15h5v2.5s1.2-2.5 4.5-2.5C31 15 32 17.5 32 21v9h-5v-8c0-1.8-.6-3-2.3-3-1.8 0-3 1.2-3 3v8h-4.7V15z" fill="#fff"/></svg>` },
   { label:'Instagram', color:0xc13584, url:'https://www.instagram.com/theratbeko/', handle:'@theratbeko', accent:'#f48fb1',
+    tagline:'«А здесь — просто я»',
     svg:`<svg viewBox="0 0 38 38"><defs><linearGradient id="ig" x1="0" y1="38" x2="38" y2="0"><stop stop-color="#f09433"/><stop offset=".25" stop-color="#e6683c"/><stop offset=".5" stop-color="#dc2743"/><stop offset=".75" stop-color="#cc2366"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="34" height="34" rx="9" fill="url(#ig)"/><rect x="9" y="9" width="20" height="20" rx="6" stroke="#fff" stroke-width="2.2"/><circle cx="19" cy="19" r="5" stroke="#fff" stroke-width="2.2"/><circle cx="26" cy="12" r="1.6" fill="#fff"/></svg>` },
 ];
 const WP=[new THREE.Vector3(-7,0,6),new THREE.Vector3(-4,0,3),new THREE.Vector3(-1,0,1),new THREE.Vector3(2,0,-2),new THREE.Vector3(5,0,-4),new THREE.Vector3(7,0,-6)];
@@ -292,14 +315,37 @@ const popup=document.getElementById('social-popup');
 const popIcon=document.getElementById('pop-icon');
 const popName=document.getElementById('pop-name');
 const popHandle=document.getElementById('pop-handle');
+const popStory=document.getElementById('pop-story');
 const popCta=document.getElementById('pop-cta');
+const ending=document.getElementById('ending');
 let popupVisible=false;
+const visited=new Set();
+
+function refreshDots(){
+  [0,1,2,3].forEach(j=>{
+    const dot=document.getElementById('d'+j);
+    dot.classList.toggle('on',j===cur);
+    dot.classList.toggle('done',visited.has(j)&&j!==cur);
+  });
+}
+
 function showPopup(idx){
   const s=STOPS[idx];
   popIcon.innerHTML=`<div class="pr" style="background:${s.accent}44"></div>${s.svg}`;
   popName.textContent=s.label; popHandle.textContent=s.handle;
+  popStory.textContent=s.tagline||''; popStory.style.display=s.tagline?'block':'none';
   popCta.href=s.url; popCta.style.color=s.accent;
   popup.classList.add('show'); popupVisible=true;
+  if(!visited.has(idx)){
+    visited.add(idx);
+    refreshDots();
+    if([1,2,3].every(i=>visited.has(i))){
+      setTimeout(()=>{
+        ending.classList.add('show');
+        setTimeout(()=>ending.classList.remove('show'),5000);
+      },1400);
+    }
+  }
 }
 function hidePopup(){popup.classList.remove('show');popupVisible=false;}
 document.getElementById('pop-close').onclick=hidePopup;
@@ -312,14 +358,13 @@ let cur=0,charT=0,targetT=0,targetNext=0,moving=false,walkT=0;
 const camPos=new THREE.Vector3(0,15,13),camLook=new THREE.Vector3(),camOff=new THREE.Vector3(0,15,13);
 const bL=document.getElementById('bL'),bR=document.getElementById('bR');
 const welcomeBoard=document.getElementById('welcome-board');
+function setDots(i){cur=i;refreshDots();}
 
 // show welcome board after short delay
 setTimeout(()=>{
   welcomeBoard.style.opacity='1';
   welcomeBoard.style.transition='opacity 0.8s ease';
 },600);
-
-function setDots(i){[0,1,2,3].forEach(j=>document.getElementById('d'+j).classList.toggle('on',j===i));}
 
 function moveTo(next){
   if(moving||next===cur)return;
@@ -330,8 +375,8 @@ function moveTo(next){
   hidePopup();
 }
 function onMoveEnd(){
-  moving=false; walkT=0; cur=targetNext;
-  setDots(cur);
+  moving=false; walkT=0;
+  setDots(targetNext);
   bL.disabled=cur===0; bR.disabled=cur===3;
   if(cur>0)showPopup(cur);
 }
